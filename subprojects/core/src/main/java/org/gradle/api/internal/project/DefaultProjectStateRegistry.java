@@ -127,6 +127,9 @@ public class DefaultProjectStateRegistry implements ProjectStateRegistry {
     @Override
     public <T> T withMutableStateOfAllProjects(Factory<T> factory) {
         if (!ownerOfAllProjects.compareAndSet(null, Thread.currentThread())) {
+            if (ownerOfAllProjects.get() == Thread.currentThread()) {
+                return factory.create();
+            }
             throw new IllegalStateException(String.format("Another thread (%s) currently holds the state lock for all projects.", ownerOfAllProjects));
         }
         try {

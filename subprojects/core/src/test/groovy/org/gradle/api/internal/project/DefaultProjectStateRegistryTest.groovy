@@ -112,17 +112,27 @@ class DefaultProjectStateRegistryTest extends ConcurrentSpec {
         when:
         async {
             workerThread {
+                assert !state.hasMutableState()
                 state.withMutableState {
+                    assert state.hasMutableState()
                     instant.start
                     thread.block()
+                    state.withMutableState {
+                        // nested
+                    }
+                    assert state.hasMutableState()
                     instant.thread1
                 }
+                assert !state.hasMutableState()
             }
             workerThread {
                 thread.blockUntil.start
+                assert !state.hasMutableState()
                 state.withMutableState {
+                    assert state.hasMutableState()
                     instant.thread2
                 }
+                assert !state.hasMutableState()
             }
         }
 
@@ -172,7 +182,7 @@ class DefaultProjectStateRegistryTest extends ConcurrentSpec {
         }
     }
 
-    def "can access projects with lenient state"() {
+    def "can access projects with all projects locked"() {
         given:
         def build = build("p1", "p2")
         registry.registerProjects(build)
@@ -183,6 +193,10 @@ class DefaultProjectStateRegistryTest extends ConcurrentSpec {
 
         and:
         registry.withMutableStateOfAllProjects {
+            assert state.hasMutableState()
+            registry.withMutableStateOfAllProjects {
+                assert state.hasMutableState()
+            }
             assert state.hasMutableState()
         }
 
