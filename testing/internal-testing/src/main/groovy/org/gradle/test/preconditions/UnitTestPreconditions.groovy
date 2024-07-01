@@ -135,10 +135,17 @@ class UnitTestPreconditions {
         }
     }
 
+    static final class Java8OnMacOs implements TestPrecondition {
+        @Override
+        boolean isSatisfied() {
+            return satisfied(MacOs) && JavaVersion.current() == JavaVersion.VERSION_1_8
+        }
+    }
+
     static final class NotJava8OnMacOs implements TestPrecondition {
         @Override
         boolean isSatisfied() {
-            return notSatisfied(MacOs) && JavaVersion.current() != JavaVersion.VERSION_1_8
+            return notSatisfied(Java8OnMacOs)
         }
     }
 
@@ -466,6 +473,13 @@ class UnitTestPreconditions {
         @Override
         boolean isSatisfied() {
             System.getProperty('java.vm.vendor') == 'Oracle Corporation'
+        }
+    }
+
+    static final class KotlinOnlySupportsJdk21Earlier implements TestPrecondition {
+        @Override
+        boolean isSatisfied() {
+            return new Jdk21OrEarlier().satisfied
         }
     }
 

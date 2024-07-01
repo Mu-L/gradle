@@ -16,6 +16,7 @@
 package org.gradle.testfixtures.internal;
 
 import org.gradle.api.internal.properties.GradleProperties;
+import org.gradle.configuration.DefaultBuildClientMetaData;
 import org.gradle.configuration.GradleLauncherMetaData;
 import org.gradle.initialization.BuildCancellationToken;
 import org.gradle.initialization.BuildClientMetaData;
@@ -25,7 +26,7 @@ import org.gradle.initialization.GradlePropertiesController;
 import org.gradle.internal.build.BuildModelControllerServices;
 import org.gradle.internal.installation.CurrentGradleInstallation;
 import org.gradle.internal.installation.GradleInstallation;
-import org.gradle.internal.service.ServiceRegistry;
+import org.gradle.internal.service.Provides;
 import org.gradle.internal.service.scopes.BuildScopeServices;
 
 import javax.annotation.Nullable;
@@ -36,27 +37,33 @@ import java.util.Map;
 public class TestBuildScopeServices extends BuildScopeServices {
     private final File homeDir;
 
-    public TestBuildScopeServices(ServiceRegistry parent, File homeDir, BuildModelControllerServices.Supplier supplier) {
-        super(parent, supplier);
+    public TestBuildScopeServices(File homeDir, BuildModelControllerServices.Supplier supplier) {
+        super(supplier);
         this.homeDir = homeDir;
-        register(registration -> {
-            registration.add(DefaultProjectDescriptorRegistry.class);
-        });
+    }
+
+    @Provides
+    protected DefaultProjectDescriptorRegistry createProjectDescriptorRegistry() {
+        return new DefaultProjectDescriptorRegistry();
     }
 
     @Override
+    @Provides
     protected GradleProperties createGradleProperties(GradlePropertiesController gradlePropertiesController) {
         return new EmptyGradleProperties();
     }
 
+    @Provides
     protected BuildCancellationToken createBuildCancellationToken() {
         return new DefaultBuildCancellationToken();
     }
 
+    @Provides
     protected BuildClientMetaData createClientMetaData() {
-        return new GradleLauncherMetaData();
+        return new DefaultBuildClientMetaData(new GradleLauncherMetaData());
     }
 
+    @Provides
     protected CurrentGradleInstallation createCurrentGradleInstallation() {
         return new CurrentGradleInstallation(new GradleInstallation(homeDir));
     }

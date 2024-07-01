@@ -25,7 +25,7 @@ gradlebuildJava.usedInWorkers()
 
 dependencies {
     api(projects.hashing)
-    api(projects.javaLanguageExtensions)
+    api(projects.stdlibJavaExtensions)
 
     api(libs.guava)
     api(libs.jsr305)
@@ -34,4 +34,6 @@ dependencies {
 
     implementation(libs.kryo)
     implementation(libs.slf4jApi)
+
+    compileOnly(libs.errorProneAnnotations)
 }

@@ -45,6 +45,7 @@ data class DefaultAnalysisSchema(
         override val externalObjectsByFqName: Map<FqName, ExternalObjectProviderKey> = mapOf()
         override val defaultImports: Set<FqName> = setOf()
 
+        @Suppress("unused")
         private
         fun readResolve(): Any = Empty
     }
@@ -69,6 +70,8 @@ data class DefaultDataClass(
         override val properties: List<DataProperty> = Collections.emptyList()
         override val memberFunctions: List<SchemaMemberFunction> = Collections.emptyList()
         override val constructors: List<DataConstructor> = Collections.emptyList()
+
+        @Suppress("unused")
         private
         fun readResolve(): Any = Empty
     }
@@ -87,15 +90,27 @@ data class DefaultDataProperty(
 ) : DataProperty {
     data object DefaultPropertyMode {
         @Serializable
-        data object DefaultReadWrite : PropertyMode.ReadWrite
+        data object DefaultReadWrite : PropertyMode.ReadWrite {
+            @Suppress("unused")
+            private
+            fun readResolve(): Any = DefaultReadWrite
+        }
 
 
         @Serializable
-        data object DefaultReadOnly : PropertyMode.ReadOnly
+        data object DefaultReadOnly : PropertyMode.ReadOnly {
+            @Suppress("unused")
+            private
+            fun readResolve(): Any = DefaultReadOnly
+        }
 
 
         @Serializable
-        data object DefaultWriteOnly : PropertyMode.WriteOnly
+        data object DefaultWriteOnly : PropertyMode.WriteOnly {
+            @Suppress("unused")
+            private
+            fun readResolve(): Any = DefaultWriteOnly
+        }
     }
 }
 
@@ -173,6 +188,7 @@ object ParameterSemanticsInternal {
     @Serializable
     @SerialName("unknown")
     data object DefaultUnknown : ParameterSemantics.Unknown {
+        @Suppress("unused")
         private
         fun readResolve(): Any = DefaultUnknown
     }
@@ -183,16 +199,17 @@ object FunctionSemanticsInternal {
 
     @Serializable
     @SerialName("builder")
-    class DefaultBuilder(private val objectType: DataTypeRef) : Builder {
+    data class DefaultBuilder(private val objectType: DataTypeRef) : Builder {
         override val returnValueType: DataTypeRef
             get() = objectType
     }
 
     @Serializable
     @SerialName("accessAndConfigure")
-    class DefaultAccessAndConfigure(
+    data class DefaultAccessAndConfigure(
         override val accessor: ConfigureAccessor,
-        override val returnType: ReturnType
+        override val returnType: ReturnType,
+        override val configureBlockRequirement: ConfigureBlockRequirement
     ) : AccessAndConfigure {
         override val returnValueType: DataTypeRef
             get() = when (returnType) {
@@ -200,24 +217,29 @@ object FunctionSemanticsInternal {
                 is ReturnType.Unit -> DataTypeInternal.DefaultUnitType.ref
             }
 
-        override val configureBlockRequirement: ConfigureBlockRequirement.Required
-            get() = DefaultConfigureBlockRequirement.DefaultRequired
-
         /** Implementations for [ReturnType] */
         object DefaultReturnType {
             @Serializable
             @SerialName("configuredObject")
-            data object DefaultConfiguredObject : ReturnType.ConfiguredObject
+            data object DefaultConfiguredObject : ReturnType.ConfiguredObject {
+                @Suppress("unused")
+                private
+                fun readResolve(): Any = DefaultConfiguredObject
+            }
 
             @Serializable
             @SerialName("unit")
-            object DefaultUnit : ReturnType.Unit
+            object DefaultUnit : ReturnType.Unit {
+                @Suppress("unused")
+                private
+                fun readResolve(): Any = DefaultUnit
+            }
         }
     }
 
     @Serializable
     @SerialName("addAndConfigure")
-    class DefaultAddAndConfigure(
+    data class DefaultAddAndConfigure(
         private val objectType: DataTypeRef,
         override val configureBlockRequirement: ConfigureBlockRequirement
     ) : AddAndConfigure {
@@ -230,21 +252,33 @@ object FunctionSemanticsInternal {
 
     @Serializable
     @SerialName("pure")
-    class DefaultPure(override val returnValueType: DataTypeRef) : Pure
+    data class DefaultPure(override val returnValueType: DataTypeRef) : Pure
 
     /** Implementations for [ConfigureBlockRequirement] */
-    object DefaultConfigureBlockRequirement {
+    data object DefaultConfigureBlockRequirement {
         @Serializable
         @SerialName("notAllowed")
-        data object DefaultNotAllowed : ConfigureBlockRequirement.NotAllowed
+        data object DefaultNotAllowed : ConfigureBlockRequirement.NotAllowed {
+            @Suppress("unused")
+            private
+            fun readResolve(): Any = DefaultNotAllowed
+        }
 
         @Serializable
         @SerialName("optional")
-        data object DefaultOptional : ConfigureBlockRequirement.Optional
+        data object DefaultOptional : ConfigureBlockRequirement.Optional {
+            @Suppress("unused")
+            private
+            fun readResolve(): Any = DefaultOptional
+        }
 
         @Serializable
         @SerialName("required")
-        data object DefaultRequired : ConfigureBlockRequirement.Required
+        data object DefaultRequired : ConfigureBlockRequirement.Required {
+            @Suppress("unused")
+            private
+            fun readResolve(): Any = DefaultRequired
+        }
     }
 }
 
@@ -295,11 +329,15 @@ data class DefaultExternalObjectProviderKey(override val objectType: DataTypeRef
 object DataTypeRefInternal {
     @Serializable
     @SerialName("dataTypeRefType")
-    data class DefaultType(override val dataType: DataType) : DataTypeRef.Type
+    data class DefaultType(override val dataType: DataType) : DataTypeRef.Type {
+        override fun toString(): String = dataType.toString()
+    }
 
     @Serializable
     @SerialName("dataTypeRefName")
-    data class DefaultName(override val fqName: FqName) : DataTypeRef.Name
+    data class DefaultName(override val fqName: FqName) : DataTypeRef.Name {
+        override fun toString(): String = fqName.simpleName
+    }
 }
 
 

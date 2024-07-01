@@ -11,27 +11,27 @@ version = "4.4.1"
 base.archivesName = "plugins"
 
 dependencies {
-    compileOnly(project(":base-services"))
-    compileOnly(project(":logging"))
-    compileOnly(project(":core-api"))
-    compileOnly(project(":model-core"))
-    compileOnly(project(":core"))
-    compileOnly(project(":language-jvm"))
-    compileOnly(project(":language-java"))
-    compileOnly(project(":platform-jvm"))
-    compileOnly(project(":plugin-development"))
-    compileOnly(project(":kotlin-dsl"))
+    compileOnly(projects.baseServices)
+    compileOnly(projects.logging)
+    compileOnly(projects.coreApi)
+    compileOnly(projects.modelCore)
+    compileOnly(projects.core)
+    compileOnly(projects.languageJvm)
+    compileOnly(projects.languageJava)
+    compileOnly(projects.platformJvm)
+    compileOnly(projects.pluginDevelopment)
+    compileOnly(projects.kotlinDsl)
 
     compileOnly(libs.slf4jApi)
     compileOnly(libs.inject)
 
-    implementation(libs.futureKotlin("stdlib"))
+    implementation(libs.kotlinStdlib)
     implementation(libs.futureKotlin("gradle-plugin"))
     implementation(libs.futureKotlin("sam-with-receiver"))
     implementation(libs.futureKotlin("assignment"))
 
     testImplementation(projects.logging)
-    testImplementation(testFixtures(project(":kotlin-dsl")))
+    testImplementation(testFixtures(projects.kotlinDsl))
     testImplementation(libs.slf4jApi)
     testImplementation(libs.mockitoKotlin)
 }

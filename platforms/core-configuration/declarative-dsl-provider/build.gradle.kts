@@ -19,28 +19,34 @@ plugins {
 }
 
 dependencies {
-    api(project(":base-services"))
-    api(project(":core"))
-    api(project(":core-api"))
-    api(project(":declarative-dsl-api"))
-    api(project(":declarative-dsl-core"))
-    api(project(":declarative-dsl-tooling-models"))
-    api(libs.futureKotlin("stdlib"))
-    api(libs.inject)
+    api(projects.serviceProvider)
+    api(projects.core)
+    api(projects.coreApi)
+    api(projects.declarativeDslApi)
+    api(projects.declarativeDslCore)
+    api(projects.declarativeDslEvaluator)
+    api(projects.declarativeDslToolingModels)
+    api(libs.kotlinStdlib)
 
+
+    implementation(libs.inject)
     testImplementation(libs.mockitoKotlin2)
 
-    implementation(projects.javaLanguageExtensions)
-    implementation(project(":resources"))
-    implementation(project(":model-core"))
+    implementation(projects.baseServices)
+    implementation(projects.resources)
+    implementation(projects.serviceLookup)
 
     implementation(libs.guava)
-    implementation(libs.futureKotlin("reflect"))
+    implementation(libs.kotlinReflect)
 
-    integTestImplementation(project(":internal-testing"))
-    integTestImplementation(project(":logging"))
+    integTestImplementation(projects.internalTesting)
+    integTestImplementation(projects.logging)
+    integTestImplementation(testFixtures(projects.declarativeDslProvider))
 
-    integTestDistributionRuntimeOnly(project(":distributions-full"))
+    testFixturesImplementation(projects.internalTesting)
+    testFixturesImplementation(projects.internalIntegTesting)
 
-    integTestImplementation(testFixtures(project(":tooling-api")))
+    integTestDistributionRuntimeOnly(projects.distributionsFull)
+
+    integTestImplementation(testFixtures(projects.toolingApi))
 }

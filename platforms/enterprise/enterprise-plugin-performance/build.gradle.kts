@@ -8,15 +8,26 @@ description = """Performance tests for the build scan plugin
     | """.trimMargin()
 
 dependencies {
-    testFixturesApi(project(":internal-performance-testing"))
+    performanceTestImplementation(projects.baseServices)
+    performanceTestImplementation(projects.internalTesting)
+
+    performanceTestCompileOnly(projects.internalIntegTesting)
+    performanceTestCompileOnly(projects.internalPerformanceTesting)
+
+    performanceTestImplementation(libs.gradleProfiler)
+
+    testFixturesApi(projects.baseServices)
+
     testFixturesApi(libs.commonsIo)
-    testFixturesApi(project(":base-services"))
-    testFixturesImplementation(project(":internal-testing"))
-    testFixturesImplementation(project(":internal-integ-testing"))
-    testFixturesImplementation(project(":logging"))
+
+    testFixturesImplementation(projects.internalIntegTesting)
+    testFixturesImplementation(projects.internalTesting)
+    testFixturesImplementation(projects.internalPerformanceTesting)
+    testFixturesImplementation(projects.logging)
+
     testFixturesImplementation(libs.groovyJson)
 
-    performanceTestDistributionRuntimeOnly(project(":distributions-full")) {
+    performanceTestDistributionRuntimeOnly(projects.distributionsFull) {
         because("so that all Gradle features are available")
     }
 }

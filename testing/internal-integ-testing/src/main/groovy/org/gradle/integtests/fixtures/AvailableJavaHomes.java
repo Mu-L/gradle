@@ -70,6 +70,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.gradle.internal.jvm.inspection.JvmInstallationMetadata.JavaInstallationCapability.JAVA_COMPILER;
+import static org.gradle.jvm.toolchain.internal.LocationListInstallationSupplier.JAVA_INSTALLATIONS_PATHS_PROPERTY;
 
 /**
  * Allows the tests to get hold of an alternative Java installation when needed.
@@ -237,10 +238,10 @@ public abstract class AvailableJavaHomes {
      */
     public static Jvm getDifferentJdkWithValidJre() {
         return getSupportedJdk(jvm -> !isCurrentJavaHome(jvm)
-            && Jvm.discovered(jvm.getJavaHome().toFile(), null, jvm.getLanguageVersion()).getJre() != null);
+            && Jvm.discovered(jvm.getJavaHome().toFile(), null, Integer.parseInt(jvm.getLanguageVersion().getMajorVersion())).getJre() != null);
     }
 
-    private static boolean isCurrentJavaHome(JvmInstallationMetadata metadata) {
+    public static boolean isCurrentJavaHome(JvmInstallationMetadata metadata) {
         return metadata.getJavaHome().toFile().equals(Jvm.current().getJavaHome());
     }
 
@@ -250,17 +251,8 @@ public abstract class AvailableJavaHomes {
      * @return The JRE home directory, or null if not found
      */
     public static File getBestJre() {
-        Jvm jvm = Jvm.current();
-        File jre = jvm.getStandaloneJre();
-        if (jre != null) {
-            return jre;
-        }
-        jre = jvm.getEmbeddedJre();
-        if (jre != null) {
-            return jre;
-        }
-        // Use the JDK instead
-        return jvm.getJavaHome();
+        // TODO: We should improve this to look for any JRE from any JVM installation
+        return Jvm.current().getJre();
     }
 
     public static JvmInstallationMetadata getJvmInstallationMetadata(Jvm jvm) {
@@ -272,7 +264,7 @@ public abstract class AvailableJavaHomes {
     }
 
     private static Jvm jvmFromMetadata(JvmInstallationMetadata metadata) {
-        return Jvm.discovered(metadata.getJavaHome().toFile(), metadata.getJavaVersion(), metadata.getLanguageVersion());
+        return Jvm.discovered(metadata.getJavaHome().toFile(), metadata.getJavaVersion(), Integer.parseInt(metadata.getLanguageVersion().getMajorVersion()));
     }
 
     public static List<JvmInstallationMetadata> getAvailableJvmMetadatas() {
@@ -306,11 +298,9 @@ public abstract class AvailableJavaHomes {
         WindowsRegistry windowsRegistry = NativeServicesTestFixture.getInstance().get(WindowsRegistry.class);
         return Lists.newArrayList(
             new AsdfInstallationSupplier(toolchainConfiguration),
-            new BaseDirJvmLocator("/opt"),
-            new BaseDirJvmLocator("/opt/jdk"),
-            new BaseDirJvmLocator("C:\\Program Files\\Java\\"),
             new BaseDirJvmLocator(SystemProperties.getInstance().getUserHome()),
             new CurrentInstallationSupplier(),
+            new ToolchainInstallatioinPathsSystemPropertyJvmLocator(),
             new EnvVariableJvmLocator(),
             new IntellijInstallationSupplier(toolchainConfiguration),
             new JabbaInstallationSupplier(toolchainConfiguration),
@@ -341,6 +331,30 @@ public abstract class AvailableJavaHomes {
                 .filter(it -> JDK_PATTERN.matcher(it.getKey()).matches())
                 .map(entry -> InstallationLocation.userDefined(new File(entry.getValue()), "env var " + entry.getKey()))
                 .collect(Collectors.toSet());
+        }
+    }
+
+    /**
+     * On CI we pass -Porg.gradle.java.installations.paths=X,Y,Z to the build, then "forward" it
+     * as system property to get deterministic results.
+     */
+    private static class ToolchainInstallatioinPathsSystemPropertyJvmLocator implements InstallationSupplier {
+
+        @Override
+        public String getSourceName() {
+            return "System properties " + JAVA_INSTALLATIONS_PATHS_PROPERTY;
+        }
+
+        @Override
+        public Set<InstallationLocation> get() {
+            final String property = System.getProperty(JAVA_INSTALLATIONS_PATHS_PROPERTY);
+            if (property != null) {
+                return Arrays.stream(property.split(","))
+                    .filter(path -> !path.trim().isEmpty())
+                    .map(path -> InstallationLocation.userDefined(new File(path), getSourceName()))
+                    .collect(Collectors.toSet());
+            }
+            return Collections.emptySet();
         }
     }
 

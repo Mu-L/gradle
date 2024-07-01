@@ -24,20 +24,12 @@ description = """Problem SPI implementations.
 """.trimMargin()
 
 dependencies {
-    api(project(":problems-api"))
+    api(projects.problemsApi)
+    api(projects.buildOperations)
+    api(projects.stdlibJavaExtensions)
+    api(projects.serviceProvider)
 
-    implementation(libs.guava)
-    implementation(libs.inject)
-
-    implementation(project(":core-api"))
-    implementation(project(":core"))
-    implementation(project(":base-services"))
-    implementation(project(":logging"))
-    implementation(project(":enterprise-operations")) {
-        because("ExecuteTaskBuildOperationType is used in the problem reporting infrastructure")
-    }
-
-    integTestImplementation(project(":internal-testing"))
-    integTestImplementation(testFixtures(project(":logging")))
-    integTestDistributionRuntimeOnly(project(":distributions-full"))
+    integTestImplementation(projects.internalTesting)
+    integTestImplementation(testFixtures(projects.logging))
+    integTestDistributionRuntimeOnly(projects.distributionsFull)
 }

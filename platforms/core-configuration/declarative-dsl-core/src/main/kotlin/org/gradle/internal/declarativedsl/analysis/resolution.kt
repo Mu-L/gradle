@@ -1,5 +1,6 @@
 package org.gradle.internal.declarativedsl.analysis
 
+import org.gradle.declarative.dsl.evaluation.OperationGenerationId
 import org.gradle.declarative.dsl.schema.DataProperty
 import org.gradle.declarative.dsl.schema.DataType
 import org.gradle.declarative.dsl.schema.FqName
@@ -12,12 +13,19 @@ import org.gradle.internal.declarativedsl.language.LocalValue
 data class ResolutionResult(
     val topLevelReceiver: ObjectOrigin.TopLevelReceiver,
     val assignments: List<AssignmentRecord>,
-    val additions: List<DataAddition>,
+    val additions: List<DataAdditionRecord>,
+    val nestedObjectAccess: List<NestedObjectAccessRecord>,
     val errors: List<ResolutionError>,
+    val conventionAssignments: List<AssignmentRecord> = emptyList(),
+    val conventionAdditions: List<DataAdditionRecord> = emptyList(),
+    val conventionNestedObjectAccess: List<NestedObjectAccessRecord> = emptyList()
 )
 
 
-data class DataAddition(val container: ObjectOrigin, val dataObject: ObjectOrigin)
+data class DataAdditionRecord(val container: ObjectOrigin, val dataObject: ObjectOrigin)
+
+
+data class NestedObjectAccessRecord(val container: ObjectOrigin, val dataObject: ObjectOrigin.AccessAndConfigureReceiver)
 
 
 data class ResolutionError(
@@ -49,4 +57,15 @@ sealed interface ErrorReason {
     data object UnresolvedAssignmentRhs : ErrorReason // TODO: resolution trace here, too?
     data object UnitAssignment : ErrorReason
     data object DanglingPureExpression : ErrorReason
+}
+
+
+class DefaultOperationGenerationId(override val ordinal: Int) : OperationGenerationId {
+    companion object {
+        val preExisting = DefaultOperationGenerationId(-1)
+        val convention = DefaultOperationGenerationId(0)
+        val finalEvaluation = DefaultOperationGenerationId(1)
+    }
+
+    override fun compareTo(other: OperationGenerationId): Int = compareValues(ordinal, other.ordinal)
 }

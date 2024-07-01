@@ -74,7 +74,16 @@ import static java.util.stream.Collectors.toSet;
 
 public interface ArchUnitFixture {
     DescribedPredicate<JavaClass> classes_not_written_in_kotlin = resideOutsideOfPackages(
+        "org.gradle.internal.cc..",
         "org.gradle.configurationcache..",
+        "org.gradle.internal.configuration.problems..",
+        "org.gradle.internal.encryption..",
+        "org.gradle.internal.extensions.core..",
+        "org.gradle.internal.extensions.stdlib..",
+        "org.gradle.internal.flow.services..",
+        "org.gradle.internal.serialize.beans..",
+        "org.gradle.internal.serialize.codecs..",
+        "org.gradle.internal.serialize.graph..",
         "org.gradle.kotlin..",
         "org.gradle.internal.declarativedsl..",
         "org.gradle.declarative.dsl.."

@@ -32,11 +32,12 @@ import org.gradle.api.internal.attributes.AttributeContainerInternal
 import org.gradle.api.internal.attributes.AttributesSchemaInternal
 import org.gradle.api.internal.attributes.DefaultAttributesSchema
 import org.gradle.api.internal.attributes.ImmutableAttributes
-import org.gradle.internal.component.ResolutionFailureHandler
+import org.gradle.api.problems.internal.InternalProblems
+import org.gradle.internal.component.resolution.failure.ResolutionFailureHandler
 import org.gradle.internal.component.external.descriptor.DefaultExclude
 import org.gradle.internal.component.external.model.ImmutableCapabilities
-import org.gradle.internal.component.resolution.failure.exception.ConfigurationSelectionException
-import org.gradle.internal.component.resolution.failure.exception.VariantSelectionException
+import org.gradle.internal.component.resolution.failure.exception.VariantSelectionByAttributesException
+import org.gradle.internal.component.resolution.failure.exception.VariantSelectionByNameException
 import org.gradle.util.AttributeTestUtil
 import org.gradle.util.SnapshotTestUtil
 import org.gradle.util.TestUtil
@@ -48,7 +49,7 @@ import static org.gradle.util.internal.TextUtil.toPlatformLineSeparators
 
 class LocalComponentDependencyMetadataTest extends Specification {
     AttributesSchemaInternal attributesSchema = new DefaultAttributesSchema(TestUtil.instantiatorFactory(), SnapshotTestUtil.isolatableFactory())
-    GraphVariantSelector variantSelector = new GraphVariantSelector(new ResolutionFailureHandler(DependencyManagementTestUtil.standardResolutionFailureDescriberRegistry()))
+    GraphVariantSelector variantSelector = new GraphVariantSelector(new ResolutionFailureHandler(DependencyManagementTestUtil.standardResolutionFailureDescriberRegistry(), Stub(InternalProblems)))
 
     ComponentIdentifier toComponentId = Stub(ComponentIdentifier) {
         getDisplayName() >> "[target]"
@@ -111,7 +112,7 @@ class LocalComponentDependencyMetadataTest extends Specification {
         dep.selectVariants(variantSelector, attributes(key: 'other'), toComponent, attributesSchema, [] as Set)
 
         then:
-        def e = thrown(VariantSelectionException)
+        def e = thrown(VariantSelectionByNameException)
         e.message == toPlatformLineSeparators("""Configuration 'default' in [target] does not match the consumer attributes
 Configuration 'default':
   - Incompatible because this component declares attribute 'key' with value 'nothing' and the consumer needed attribute 'key' with value 'other'""")
@@ -128,7 +129,7 @@ Configuration 'default':
         dep.selectVariants(variantSelector, attributes(key: 'something'), toComponent, attributesSchema, [] as Set)
 
         then:
-        def e = thrown(VariantSelectionException)
+        def e = thrown(VariantSelectionByNameException)
         e.message == toPlatformLineSeparators("""Configuration 'bar' in [target] does not match the consumer attributes
 Configuration 'bar':
   - Incompatible because this component declares attribute 'key' with value 'something else' and the consumer needed attribute 'key' with value 'something'""")
@@ -154,9 +155,11 @@ Configuration 'bar':
                 throw new Exception("Expected an ambiguous result, but got $result")
             }
             assert result == [expected] as Set
-        } catch (VariantSelectionException e) {
+        } catch (VariantSelectionByAttributesException e) {
             if (expected == null) {
-                def expectedMsg = "The consumer was configured to find ${queryAttributes.flavor?"attribute 'flavor' with value '$queryAttributes.flavor', ":""}attribute 'platform' with value '${queryAttributes.platform}'. However we cannot choose between the following variants of [target]:\n  - bar\n  - foo\nAll of them match the consumer attributes:"
+                def distinguisher = queryAttributes.containsKey('flavor') ? 'extra' : 'flavor'
+                def distinguishingValues = distinguisher == 'flavor' ? "\n  - Value: 'paid' selects variant: 'bar'\n  - Value: 'free' selects variant: 'foo'" : "\n  - Value: 'bar' selects variant: 'bar'\n  - Value: 'foo' selects variant: 'foo'"
+                def expectedMsg = "The consumer was configured to find ${queryAttributes.flavor?"attribute 'flavor' with value '$queryAttributes.flavor', ":""}attribute 'platform' with value '${queryAttributes.platform}'. There are several available matching variants of [target]\nThe only attribute distinguishing these variants is '$distinguisher'. Add this attribute to the consumer's configuration to resolve the ambiguity:${distinguishingValues}"
                 assert e.message.startsWith(toPlatformLineSeparators(expectedMsg))
             } else {
                 throw e
@@ -203,9 +206,11 @@ Configuration 'bar':
                 throw new Exception("Expected an ambiguous result, but got $result")
             }
             assert result == [expected] as Set
-        } catch (VariantSelectionException e) {
+        } catch (VariantSelectionByAttributesException e) {
             if (expected == null) {
-                def expectedMsg = "The consumer was configured to find ${queryAttributes.flavor?"attribute 'flavor' with value '${queryAttributes.flavor}', ":""}attribute 'platform' with value '${queryAttributes.platform}'. However we cannot choose between the following variants of [target]:\n  - bar\n  - foo\nAll of them match the consumer attributes:"
+                def distinguisher = queryAttributes.containsKey('flavor') ? 'extra' : 'flavor'
+                def distinguishingValues = distinguisher == 'flavor' ? "\n  - Value: 'paid' selects variant: 'bar'\n  - Value: 'free' selects variant: 'foo'" : "\n  - Value: 'bar' selects variant: 'bar'\n  - Value: 'foo' selects variant: 'foo'"
+                def expectedMsg = "The consumer was configured to find ${queryAttributes.flavor?"attribute 'flavor' with value '${queryAttributes.flavor}', ":""}attribute 'platform' with value '${queryAttributes.platform}'. There are several available matching variants of [target]\nThe only attribute distinguishing these variants is '$distinguisher'. Add this attribute to the consumer's configuration to resolve the ambiguity:${distinguishingValues}"
                 assert e.message.startsWith(toPlatformLineSeparators(expectedMsg))
             } else {
                 throw e
@@ -239,8 +244,8 @@ Configuration 'bar':
         dep.selectVariants(variantSelector, attributes([:]), toComponent, attributesSchema,[] as Set)
 
         then:
-        def e = thrown(ConfigurationSelectionException)
-        e.message == "A dependency was declared on configuration 'to' which is not declared in the descriptor for [target]."
+        def e = thrown(VariantSelectionByNameException)
+        e.message == "A dependency was declared on configuration 'to' of '[target]' but no variant with that configuration name exists."
     }
 
     def "excludes nothing when no exclude rules provided"() {
@@ -376,11 +381,6 @@ Configuration 'bar':
 
     class TestGraphCandidates implements GraphSelectionCandidates {
         List<VariantGraphResolveState> variants = []
-
-        @Override
-        boolean supportsAttributeMatching() {
-            !variantsForAttributeMatching.isEmpty()
-        }
 
         @Override
         List<? extends VariantGraphResolveState> getVariantsForAttributeMatching() {

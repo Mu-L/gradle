@@ -45,7 +45,6 @@ import org.gradle.api.internal.artifacts.DefaultResolverResults
 import org.gradle.api.internal.artifacts.DependencyResolutionServices
 import org.gradle.api.internal.artifacts.ResolveExceptionMapper
 import org.gradle.api.internal.artifacts.ResolverResults
-import org.gradle.api.internal.artifacts.component.ComponentIdentifierFactory
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
 import org.gradle.api.internal.artifacts.dsl.PublishArtifactNotationParserFactory
 import org.gradle.api.internal.artifacts.dsl.dependencies.DependencyLockingProvider
@@ -57,7 +56,8 @@ import org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.Visit
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.results.DefaultVisitedGraphResults
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.results.VisitedGraphResults
 import org.gradle.api.internal.artifacts.publish.DefaultPublishArtifact
-import org.gradle.api.internal.artifacts.result.DefaultMinimalResolutionResult
+import org.gradle.api.internal.artifacts.result.MinimalResolutionResult
+import org.gradle.api.internal.attributes.AttributeDesugaring
 import org.gradle.api.internal.attributes.ImmutableAttributes
 import org.gradle.api.internal.file.TestFiles
 import org.gradle.api.internal.initialization.RootScriptDomainObjectContext
@@ -101,7 +101,6 @@ class DefaultConfigurationSpec extends Specification implements InspectableConfi
     def resolver = Mock(ConfigurationResolver)
     def listenerManager = Mock(ListenerManager)
     def metaDataProvider = Mock(DependencyMetaDataProvider)
-    def componentIdentifierFactory = Mock(ComponentIdentifierFactory)
     def dependencyLockingProvider = Mock(DependencyLockingProvider)
     def resolutionStrategy = Mock(ResolutionStrategyInternal)
     def immutableAttributesFactory = AttributeTestUtil.attributesFactory()
@@ -117,7 +116,7 @@ class DefaultConfigurationSpec extends Specification implements InspectableConfi
         _ * domainObjectCollectioncallbackActionDecorator.decorate(_) >> { args -> args[0] }
         _ * userCodeApplicationContext.reapplyCurrentLater(_) >> { args -> args[0] }
         _ * rootComponentMetadataBuilder.getValidator() >> Mock(MutationValidator)
-        _ * rootComponentMetadataBuilder.withConfigurationsProvider(_) >> rootComponentMetadataBuilder
+        _ * rootComponentMetadataBuilder.newBuilder(_, _) >> rootComponentMetadataBuilder
     }
 
     void defaultValues() {
@@ -1045,7 +1044,7 @@ class DefaultConfigurationSpec extends Specification implements InspectableConfi
         def config = conf("conf")
         def resolvedComponentResult = Mock(ResolvedComponentResult)
         Supplier<ResolvedComponentResult> rootSource = () -> resolvedComponentResult
-        def result = new DefaultMinimalResolutionResult(rootSource, ImmutableAttributes.EMPTY)
+        def result = new MinimalResolutionResult(rootSource, ImmutableAttributes.EMPTY)
         def graphResults = new DefaultVisitedGraphResults(result, [] as Set, null)
 
         resolver.resolveGraph(config) >> DefaultResolverResults.graphResolved(graphResults, visitedArtifacts(), Mock(ResolverResults.LegacyResolverResults))
@@ -1746,13 +1745,13 @@ All Artifacts:
     }
 
     private ResolverResults buildDependenciesResolved() {
-        def resolutionResult = new DefaultMinimalResolutionResult(() -> Stub(ResolvedComponentResult), ImmutableAttributes.EMPTY)
+        def resolutionResult = new MinimalResolutionResult(() -> Stub(ResolvedComponentResult), ImmutableAttributes.EMPTY)
         def visitedGraphResults = new DefaultVisitedGraphResults(resolutionResult, [] as Set, null)
         DefaultResolverResults.buildDependenciesResolved(visitedGraphResults, visitedArtifacts([] as Set), Mock(ResolverResults.LegacyResolverResults))
     }
 
     private ResolverResults graphResolved(ResolveException failure) {
-        def resolutionResult = new DefaultMinimalResolutionResult(() -> Stub(ResolvedComponentResult), ImmutableAttributes.EMPTY)
+        def resolutionResult = new MinimalResolutionResult(() -> Stub(ResolvedComponentResult), ImmutableAttributes.EMPTY)
         def visitedGraphResults = new DefaultVisitedGraphResults(resolutionResult, [] as Set, failure)
 
         def visitedArtifactSet = Stub(VisitedArtifactSet) {
@@ -1770,7 +1769,7 @@ All Artifacts:
     }
 
     private ResolverResults graphResolved(Set<File> files = []) {
-        def resolutionResult = new DefaultMinimalResolutionResult(() -> Stub(ResolvedComponentResult), ImmutableAttributes.EMPTY)
+        def resolutionResult = new MinimalResolutionResult(() -> Stub(ResolvedComponentResult), ImmutableAttributes.EMPTY)
         def visitedGraphResults = new DefaultVisitedGraphResults(resolutionResult, [] as Set, null)
 
         def legacyResults = DefaultResolverResults.DefaultLegacyResolverResults.graphResolved(
@@ -1833,8 +1832,6 @@ All Artifacts:
             DirectInstantiator.INSTANCE,
             resolver,
             listenerManager,
-            metaDataProvider,
-            componentIdentifierFactory,
             dependencyLockingProvider,
             domainObjectContext,
             TestFiles.fileCollectionFactory(),
@@ -1842,6 +1839,7 @@ All Artifacts:
             publishArtifactNotationParser,
             immutableAttributesFactory,
             new ResolveExceptionMapper(Mock(DomainObjectContext), Mock(DocumentationRegistry)),
+            new AttributeDesugaring(AttributeTestUtil.attributesFactory()),
             userCodeApplicationContext,
             projectStateRegistry,
             Stub(WorkerThreadRegistry),

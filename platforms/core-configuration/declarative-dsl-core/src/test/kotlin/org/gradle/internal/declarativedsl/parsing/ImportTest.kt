@@ -6,6 +6,7 @@ import org.gradle.internal.declarativedsl.analysis.DefaultDataClass
 import org.gradle.internal.declarativedsl.analysis.ErrorCollectorImpl
 import org.gradle.internal.declarativedsl.analysis.ErrorReason
 import org.gradle.internal.declarativedsl.analysis.DefaultFqName
+import org.gradle.internal.declarativedsl.analysis.DefaultOperationGenerationId
 import org.gradle.internal.declarativedsl.analysis.ResolutionError
 import org.gradle.internal.declarativedsl.analysis.defaultCodeResolver
 import org.gradle.internal.declarativedsl.language.AccessChain
@@ -36,7 +37,8 @@ class ImportTest {
                 emptySet()
             ),
             emptyMap(),
-            errorCollector
+            errorCollector,
+            DefaultOperationGenerationId.finalEvaluation
         )
     }
 

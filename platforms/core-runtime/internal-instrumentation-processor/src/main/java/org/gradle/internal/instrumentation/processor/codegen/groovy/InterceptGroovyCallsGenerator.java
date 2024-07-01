@@ -26,13 +26,13 @@ import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.WildcardTypeName;
 import org.gradle.internal.instrumentation.api.types.BytecodeInterceptorType;
 import org.gradle.internal.instrumentation.model.CallInterceptionRequest;
+import org.gradle.internal.instrumentation.model.CallableInfo;
 import org.gradle.internal.instrumentation.model.CallableKindInfo;
 import org.gradle.internal.instrumentation.model.ParameterInfo;
 import org.gradle.internal.instrumentation.model.ParameterKindInfo;
 import org.gradle.internal.instrumentation.model.RequestExtra;
 import org.gradle.internal.instrumentation.processor.codegen.HasFailures;
 import org.gradle.internal.instrumentation.processor.codegen.RequestGroupingInstrumentationClassSourceGenerator;
-import org.gradle.internal.instrumentation.processor.codegen.SignatureUtils;
 import org.gradle.internal.instrumentation.processor.codegen.TypeUtils;
 import org.gradle.internal.instrumentation.processor.codegen.groovy.CallInterceptorSpecs.CallInterceptorSpec.ConstructorInterceptorSpec;
 import org.gradle.internal.instrumentation.processor.codegen.groovy.CallInterceptorSpecs.CallInterceptorSpec.NamedCallableInterceptorSpec;
@@ -78,6 +78,7 @@ public class InterceptGroovyCallsGenerator extends RequestGroupingInstrumentatio
             .addTypes(interceptorTypeSpecs);
     }
 
+    @SuppressWarnings("ReturnValueIgnored")
     private static List<TypeSpec> generateInterceptorClasses(Collection<CallInterceptionRequest> interceptionRequests, Consumer<? super HasFailures.FailureInfo> onFailure) {
         List<TypeSpec> result = new ArrayList<>(interceptionRequests.size() / 2);
 
@@ -165,7 +166,8 @@ public class InterceptGroovyCallsGenerator extends RequestGroupingInstrumentatio
 
     private static void validateRequests(List<CallInterceptionRequest> requests, Consumer<? super HasFailures.FailureInfo> onFailure) {
         for (CallInterceptionRequest request : requests) {
-            if (SignatureUtils.hasInjectVisitorContext(request.getInterceptedCallable())) {
+            CallableInfo callableInfo = request.getInterceptedCallable();
+            if (callableInfo.hasInjectVisitorContextParam()) {
                 onFailure.accept(new HasFailures.FailureInfo(request, "Parameter with @InjectVisitorContext annotation is not supported for Groovy interception."));
             }
         }
@@ -175,6 +177,7 @@ public class InterceptGroovyCallsGenerator extends RequestGroupingInstrumentatio
         return requests.stream().anyMatch(it -> it.getInterceptedCallable().getKind() == GROOVY_PROPERTY_GETTER || it.getInterceptedCallable().getKind() == GROOVY_PROPERTY_SETTER);
     }
 
+    @SuppressWarnings("ReturnValueIgnored")
     private static CodeBlock interceptorClassJavadoc(Collection<CallInterceptionRequest> requests) {
         List<CodeBlock> result = new ArrayList<>();
         result.add(CodeBlock.of("Intercepts the following declarations:<ul>"));
@@ -218,7 +221,7 @@ public class InterceptGroovyCallsGenerator extends RequestGroupingInstrumentatio
 
         new CodeGeneratingSignatureTreeVisitor(result).visit(tree, -1);
 
-        result.addStatement("return invocation.callOriginal()");
+        result.addStatement("return invocation.callNext()");
         return result.build();
     }
 

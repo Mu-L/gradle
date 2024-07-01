@@ -32,6 +32,8 @@ import java.nio.file.Paths
 import static org.gradle.api.internal.DocumentationRegistry.BASE_URL
 import static org.gradle.api.internal.DocumentationRegistry.RECOMMENDATION
 
+// TODO: Move all of these tests to AbstractJavaCompilerIntegrationSpec
+// so that we can verify them for forking, in-process, and cli compilers.
 class JavaCompileIntegrationTest extends AbstractIntegrationSpec {
 
     @Rule
@@ -45,7 +47,7 @@ class JavaCompileIntegrationTest extends AbstractIntegrationSpec {
             apply plugin: "java"
             tasks.withType(JavaCompile) {
                 options.fork = true
-                options.forkOptions.executable = new File(".").getAbsoluteFile().toPath().relativize(new File("${executable}").toPath()).toString()
+                options.forkOptions.executable = new File(".").getCanonicalFile().toPath().relativize(new File("${executable}").toPath()).toString()
             }
         """
 
@@ -975,11 +977,11 @@ class JavaCompileIntegrationTest extends AbstractIntegrationSpec {
     }
 
     // bootclasspath has been removed in Java 9+
-    @Requires(UnitTestPreconditions.Jdk8OrEarlier)
+    @Requires(IntegTestPreconditions.BestJreAvailable)
     @Issue("https://github.com/gradle/gradle/issues/19817")
     def "fails if bootclasspath is provided as a path instead of a single file"() {
-        def jre = AvailableJavaHomes.getBestJre()
-        def bootClasspath = TextUtil.escapeString(jre.absolutePath) + "/lib/rt.jar${File.pathSeparator}someotherpath"
+        def rtJar = new File(AvailableJavaHomes.bestJre, "lib/rt.jar")
+        def bootClasspath = TextUtil.escapeString(rtJar.absolutePath) + "${File.pathSeparator}someotherpath"
         buildFile << """
             plugins {
                 id 'java'

@@ -46,6 +46,7 @@ import org.gradle.internal.build.BuildModelControllerServices;
 import org.gradle.internal.build.BuildState;
 import org.gradle.internal.build.BuildStateRegistry;
 import org.gradle.internal.build.RootBuildState;
+import org.gradle.internal.buildprocess.BuildProcessScopeServices;
 import org.gradle.internal.buildtree.BuildTreeLifecycleController;
 import org.gradle.internal.buildtree.BuildTreeModelControllerServices;
 import org.gradle.internal.buildtree.BuildTreeState;
@@ -60,9 +61,10 @@ import org.gradle.internal.nativeintegration.services.NativeServices.NativeServi
 import org.gradle.internal.resources.DefaultResourceLockCoordinationService;
 import org.gradle.internal.resources.ResourceLockCoordinationService;
 import org.gradle.internal.scopeids.id.BuildInvocationScopeId;
+import org.gradle.internal.service.CloseableServiceRegistry;
+import org.gradle.internal.service.ServiceRegistrationProvider;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.internal.service.ServiceRegistryBuilder;
-import org.gradle.internal.service.scopes.BuildScopeServices;
 import org.gradle.internal.service.scopes.GradleUserHomeScopeServiceRegistry;
 import org.gradle.internal.session.BuildSessionState;
 import org.gradle.internal.session.CrossBuildSessionState;
@@ -129,7 +131,7 @@ public class ProjectBuilderImpl {
         BuildTreeState buildTreeState = new BuildTreeState(buildInvocationScopeId, buildSessionState.getServices(), modelServices);
         TestRootBuild build = new TestRootBuild(projectDir, startParameter, buildTreeState);
 
-        BuildScopeServices buildServices = build.getBuildServices();
+        CloseableServiceRegistry buildServices = build.getBuildServices();
         buildServices.get(BuildStateRegistry.class).attachRootBuild(build);
 
         // Take a root worker lease; this won't ever be released as ProjectBuilder has no lifecycle
@@ -203,6 +205,7 @@ public class ProjectBuilderImpl {
             .parent(LoggingServiceRegistry.newNestedLogging())
             .parent(NativeServices.getInstance())
             .provider(new TestGlobalScopeServices())
+            .provider(new BuildProcessScopeServices())
             .build();
     }
 
@@ -228,7 +231,7 @@ public class ProjectBuilderImpl {
 
     private static class TestRootBuild extends AbstractBuildState implements RootBuildState {
         private final GradleInternal gradle;
-        final BuildScopeServices buildServices;
+        final CloseableServiceRegistry buildServices;
 
         public TestRootBuild(File rootProjectDir, StartParameterInternal startParameter, BuildTreeState buildTreeState) {
             super(buildTreeState, BuildDefinition.fromStartParameter(startParameter, rootProjectDir, null), null);
@@ -237,13 +240,13 @@ public class ProjectBuilderImpl {
         }
 
         @Override
-        protected BuildScopeServices prepareServices(BuildTreeState buildTree, BuildDefinition buildDefinition, BuildModelControllerServices.Supplier supplier) {
-            final File homeDir = new File(buildDefinition.getBuildRootDir(), "gradleHome");
-            return new TestBuildScopeServices(buildTree.getServices(), homeDir, supplier);
+        protected ServiceRegistrationProvider prepareServicesProvider(BuildDefinition buildDefinition, BuildModelControllerServices.Supplier supplier) {
+            File homeDir = new File(buildDefinition.getBuildRootDir(), "gradleHome");
+            return new TestBuildScopeServices(homeDir, supplier);
         }
 
         @Override
-        public BuildScopeServices getBuildServices() {
+        public CloseableServiceRegistry getBuildServices() {
             return super.getBuildServices();
         }
 

@@ -42,8 +42,8 @@ abstract class AdHocPerformanceScenario(os: Os, arch: Arch = Arch.AMD64) : Build
         )
         param("channel", "adhoc")
         param("checks", "all")
-        text("runs", "10", display = ParameterDisplay.PROMPT, allowEmpty = false)
-        text("warmups", "3", display = ParameterDisplay.PROMPT, allowEmpty = false)
+        text("runs", "40", display = ParameterDisplay.PROMPT, allowEmpty = false)
+        text("warmups", "10", display = ParameterDisplay.PROMPT, allowEmpty = false)
         text(
             "scenario",
             "",
@@ -90,6 +90,7 @@ abstract class AdHocPerformanceScenario(os: Os, arch: Arch = Arch.AMD64) : Build
                     "%performance.baselines%",
                     """--warmups %warmups% --runs %runs% --checks %checks% --channel %channel% --profiler %profiler% %additional.gradle.parameters%""",
                     os,
+                    arch,
                     "%testJavaVersion%",
                     "%testJavaVendor%",
                 ) + buildToolGradleParameters(isContinue = false)
