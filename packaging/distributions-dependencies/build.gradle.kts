@@ -49,7 +49,6 @@ dependencies {
         api(libs.ansiControlSequenceUtil) { version { strictly("0.3") }}
         api(libs.ant)                   { version { strictly(antVersion) }}
         api(libs.antLauncher)           { version { strictly(antVersion) }}
-        api(libs.antJunit)              { version { strictly(antVersion) }}
         api(libs.asm)                   { version { strictly(asmVersion) }}
         api(libs.asmAnalysis)           { version { strictly(asmVersion) }}
         api(libs.asmCommons)            { version { strictly(asmVersion) }}
@@ -97,7 +96,7 @@ dependencies {
         api(libs.groovyTemplates)       { version { strictly(libs.groovyVersion) }}
         api(libs.groovyTest)            { version { strictly(libs.groovyVersion) }}
         api(libs.groovyXml)             { version { strictly(libs.groovyVersion) }}
-        api(libs.gson)                  { version { strictly("2.12.1") }}
+        api(libs.gson)                  { version { strictly("2.13.0") }}
         api(libs.h2Database)            { version { strictly("2.2.220") }}
         api(libs.hamcrest)              { version { strictly(hamcrestVersion) }}
         api("org.hamcrest:hamcrest-core") { version { strictly(hamcrestVersion) }}
@@ -132,6 +131,7 @@ dependencies {
         api(libs.jspecify)              { version { strictly("1.0.0") }}
         api(libs.julToSlf4j)            { version { strictly(slf4jVersion) }}
         api(libs.junit)                 { version { strictly("4.13.2") }}
+        api(libs.junitJupiter)          { version { strictly(junit5Version) }}
         api(libs.junit5JupiterApi)      { version { strictly(junit5Version) }}
         api(libs.junit5Vintage)         { version { strictly(junit5Version) }}
         api(libs.junitPlatform)         { version { strictly("1.8.2") }}

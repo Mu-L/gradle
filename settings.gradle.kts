@@ -30,7 +30,7 @@ buildscript {
     dependencies {
         // update Gson to the desired version, needed here as org.gradle.toolchains.foojay-resolver-convention brings in an older version below
         // https://github.com/gradle/foojay-toolchains/issues/99
-        classpath("com.google.code.gson:gson:2.12.1") // keep in sync with build-logic-commons/build-platform/build.gradle.kts
+        classpath("com.google.code.gson:gson:2.13.0") // keep in sync with build-logic-commons/build-platform/build.gradle.kts
     }
 }
 
@@ -39,7 +39,7 @@ plugins {
     id("gradlebuild.configuration-cache-compatibility")
     id("com.gradle.develocity").version("4.0") // Run `java build-logic-settings/UpdateDevelocityPluginVersion.java <new-version>` to update
     id("io.github.gradle.gradle-enterprise-conventions-plugin").version("0.10.2")
-    id("org.gradle.toolchains.foojay-resolver-convention").version("0.9.0")
+    id("org.gradle.toolchains.foojay-resolver-convention").version("0.10.0")
 }
 
 includeBuild("build-logic-commons")
@@ -71,6 +71,7 @@ val core = platform("core") {
         subproject("build-operations-trace")
         subproject("build-option")
         subproject("build-process-services")
+        subproject("build-process-startup")
         subproject("build-profile")
         subproject("build-state")
         subproject("classloaders")
@@ -519,9 +520,8 @@ sealed class ArchitectureElementBuilder(
 
 class ArchitectureModuleBuilder(
     name: String,
-    private val projectScope: ProjectScope
+    private val projectScope: ProjectScope = ProjectScope("platforms/$name"),
 ) : ArchitectureElementBuilder(name) {
-    constructor(name: String) : this(name, ProjectScope("platforms/$name"))
 
     fun subproject(projectName: String) {
         projectScope.subproject(projectName)
@@ -534,12 +534,10 @@ class ArchitectureModuleBuilder(
 
 class PlatformBuilder(
     name: String,
-    private val projectScope: ProjectScope
+    private val projectScope: ProjectScope = ProjectScope("platforms/$name"),
 ) : ArchitectureElementBuilder(name) {
     private val modules = mutableListOf<ArchitectureModuleBuilder>()
     private val uses = mutableListOf<PlatformBuilder>()
-
-    constructor(name: String) : this(name, ProjectScope("platforms/$name"))
 
     fun subproject(projectName: String) {
         projectScope.subproject(projectName)

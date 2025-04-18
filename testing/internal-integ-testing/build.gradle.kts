@@ -84,6 +84,7 @@ dependencies {
     implementation(projects.buildEvents)
     implementation(projects.buildOption)
     implementation(projects.buildProcessServices)
+    implementation(projects.buildProcessStartup)
     implementation(projects.buildState)
     implementation(projects.classloaders)
     implementation(projects.cli)
@@ -109,13 +110,13 @@ dependencies {
     implementation(projects.wrapperShared)
 
     implementation(testFixtures(projects.buildOperations))
+    implementation(testFixtures(projects.buildProcessStartup))
 
     implementation(libs.ansiControlSequenceUtil)
     implementation(libs.commonsCompress)
     implementation(libs.commonsLang)
     implementation(libs.commonsLang3)
     implementation(libs.commonsIo)
-    implementation(libs.groovyAnt)
     implementation(libs.groovyJson)
     implementation(libs.httpcore)
     implementation(libs.inject)
